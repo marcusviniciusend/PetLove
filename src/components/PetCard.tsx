@@ -1,0 +1,1 @@
+//card do pet que aparece na tela
