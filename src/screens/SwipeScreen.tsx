@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Swiper from 'react-native-deck-swiper'; // Importando a mágica!
 import { useSwipe } from '../hooks/useSwipe';
 import PetCard from '../components/PetCard';
+import { matchService } from '../services/matchService';
 
 export default function SwipeScreen() {
   const { pets, loading, error } = useSwipe();
@@ -44,28 +45,26 @@ export default function SwipeScreen() {
       <View style={styles.swiperContainer}>
         <Swiper
           cards={pets}
-          // A propriedade principal: ensina a biblioteca a desenhar o NOSSO cartão
           renderCard={(pet) => {
-            if (!pet) return <View />; // Proteção contra telas em branco
+            if (!pet) return <View />;
             return <PetCard pet={pet} />;
           }}
-          // O que acontece quando arrasta para a ESQUERDA
           onSwipedLeft={(cardIndex) => {
-            console.log('PASSEI ❌', pets[cardIndex].name);
+            const pet = pets[cardIndex];
+            matchService.saveInteraction(pet.id, 'dislike');
           }}
-          // O que acontece quando arrasta para a DIREITA
           onSwipedRight={(cardIndex) => {
-            console.log('MATCH 💚', pets[cardIndex].name);
+            const pet = pets[cardIndex];
+            matchService.saveInteraction(pet.id, 'like');
           }}
-          // Quando o baralho acabar
           onSwipedAll={() => {
             console.log('Todos os pets foram vistos!');
           }}
-          cardIndex={0} // Começa na primeira carta
-          backgroundColor={'transparent'} // Fundo invisível para não estragar o nosso layout
-          stackSize={3} // Mostra um "efeito cascata" de 3 cartas lá no fundo
-          disableTopSwipe={true} // Bloqueia arrastar pra cima
-          disableBottomSwipe={true} // Bloqueia arrastar pra baixo
+          cardIndex={0}
+          backgroundColor={'transparent'}
+          stackSize={3}
+          disableTopSwipe={true}
+          disableBottomSwipe={true}
           animateCardOpacity
           // Adesivos que aparecem enquanto você arrasta a carta
           overlayLabels={{
