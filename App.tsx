@@ -7,6 +7,9 @@ import SwipeScreen from './src/screens/SwipeScreen';
 import MatchesScreen from './src/screens/MatchesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
+// Importando o nosso tema centralizado!
+import { colors } from './src/theme/colors';
+
 const Tab = createBottomTabNavigator();
 
 export default function App() {
@@ -15,9 +18,9 @@ export default function App() {
       <Tab.Navigator
         initialRouteName="Swipe"
         screenOptions={{
-          tabBarActiveTintColor: '#FF6600', // Laranja do Pet Love
-          tabBarInactiveTintColor: 'gray',
-          headerShown: false, // Esconde a barra superior padrão
+          tabBarActiveTintColor: colors.primary, // Agora puxa dinamicamente!
+          tabBarInactiveTintColor: colors.inactive,
+          headerShown: false, // Esconde a barra superior
         }}
       >
         <Tab.Screen name="Perfil" component={ProfileScreen} />
