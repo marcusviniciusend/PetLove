@@ -1,4 +1,4 @@
-package com.petlove
+package com.pettinder
 
 import android.app.Application
 import com.facebook.react.PackageList
