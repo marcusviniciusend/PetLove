@@ -1,22 +1,17 @@
 import { supabase } from '../lib/supabase';
 
 export const petService = {
-  // Função para buscar todos os pets
-  async getAllPets() {
-    try {
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*');
+  // Função para buscar todos os pets cadastrados
+  async getAvailablePets() {
+    const { data, error } = await supabase
+      .from('pets')
+      .select('*');
 
-      if (error) {
-        console.error('Erro do Supabase ao buscar pets:', error.message);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Falha no petService:', error);
-      return []; // Retorna um array vazio em caso de falha para não quebrar o app
+    if (error) {
+      console.error("Erro ao buscar pets no Supabase:", error);
+      throw new Error("Não foi possível carregar os pets no momento.");
     }
+
+    return data;
   }
 };

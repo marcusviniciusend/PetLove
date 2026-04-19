@@ -47,8 +47,18 @@ export default function SwipeScreen() {
         cards={pets}
         // Usando o seu componente isolado!
         renderCard={(card) => <PetCard pet={card} />}
-        onSwipedLeft={(cardIndex) => console.log('PASSOU:', pets[cardIndex]?.name)}
-        onSwipedRight={(cardIndex) => console.log('MATCH:', pets[cardIndex]?.name)}
+        onSwipedLeft={(cardIndex) => {
+          const pet = pets[cardIndex];
+          if (pet) {
+            matchService.registerInteraction(pet.id, 'dislike');
+          }
+        }}
+        onSwipedRight={(cardIndex) => {
+          const pet = pets[cardIndex];
+          if (pet) {
+            matchService.registerInteraction(pet.id, 'like');
+          }
+        }}
         cardIndex={0}
         backgroundColor={colors.background}
         stackSize={3}
