@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { colors } from '../theme/colors';
 import LGPDConsent from '../components/LGPDConsent';
+import { petService } from '../services/petService';
 
 export default function ProfileScreen() {
   const [name, setName] = useState('');
@@ -10,14 +11,33 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState('');
   const [hasConsent, setHasConsent] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!hasConsent) {
       Alert.alert("Aviso", "Você precisa aceitar os termos da LGPD para continuar.");
       return;
     }
-    // No futuro, chamaremos a API do Supabase aqui
-    Alert.alert("Sucesso!", "Perfil do pet atualizado.");
-    console.log({ name, breed, age, bio });
+
+    if (!name || !breed || !age) {
+      Alert.alert("Aviso", "Por favor, preencha o nome, a raça e a idade do pet.");
+      return;
+    }
+
+    const success = await petService.saveProfile({
+      name: name,
+      breed: breed,
+      age: parseInt(age, 10) || 0,
+    });
+
+    if (success) {
+      Alert.alert("Sucesso!", "O perfil do seu pet foi salvo no banco de dados!");
+      setName('');
+      setBreed('');
+      setAge('');
+      setBio('');
+      setHasConsent(false);
+    } else {
+      Alert.alert("Erro", "Não foi possível salvar. Verifique sua conexão e tente novamente.");
+    }
   };
 
   return (
@@ -63,7 +83,6 @@ export default function ProfileScreen() {
           onChangeText={setBio} 
         />
 
-        {/* Aqui entra o nosso componente limpo e isolado */}
         <LGPDConsent value={hasConsent} onValueChange={setHasConsent} />
 
         <TouchableOpacity 
