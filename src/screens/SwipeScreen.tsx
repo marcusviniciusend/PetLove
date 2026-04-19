@@ -1,9 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import Swiper from 'react-native-deck-swiper'; // Importando a mágica!
+import Swiper from 'react-native-deck-swiper';
+
+// Suas importações estruturadas
 import { useSwipe } from '../hooks/useSwipe';
 import PetCard from '../components/PetCard';
 import { matchService } from '../services/matchService';
+
+// Importando o nosso tema novo!
+import { colors } from '../theme/colors';
 
 export default function SwipeScreen() {
   const { pets, loading, error } = useSwipe();
@@ -11,7 +16,8 @@ export default function SwipeScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#FF6600" />
+        {/* Cor atualizada usando o tema central */}
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -25,7 +31,7 @@ export default function SwipeScreen() {
   }
 
   // Tela de "Acabou os pets"
-  if (pets.length === 0) {
+  if (!pets || pets.length === 0) {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.title}>Fim da linha!</Text>
@@ -34,70 +40,59 @@ export default function SwipeScreen() {
     );
   }
 
+  // O Baralho de Cards
   return (
     <View style={styles.container}>
-      {/* Cabeçalho */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Pet Love</Text>
-      </View>
-
-      {/* Container do Baralho */}
-      <View style={styles.swiperContainer}>
-        <Swiper
-          cards={pets}
-          renderCard={(pet) => {
-            if (!pet) return <View />;
-            return <PetCard pet={pet} />;
-          }}
-          onSwipedLeft={(cardIndex) => {
-            const pet = pets[cardIndex];
-            matchService.saveInteraction(pet.id, 'dislike');
-          }}
-          onSwipedRight={(cardIndex) => {
-            const pet = pets[cardIndex];
-            matchService.saveInteraction(pet.id, 'like');
-          }}
-          onSwipedAll={() => {
-            console.log('Todos os pets foram vistos!');
-          }}
-          cardIndex={0}
-          backgroundColor={'transparent'}
-          stackSize={3}
-          disableTopSwipe={true}
-          disableBottomSwipe={true}
-          animateCardOpacity
-          // Adesivos que aparecem enquanto você arrasta a carta
-          overlayLabels={{
-            left: {
-              title: 'NÃO',
-              style: {
-                label: { backgroundColor: '#FF4444', color: 'white', fontSize: 32, borderRadius: 10, borderWidth: 2, borderColor: 'white' },
-                wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 30, marginLeft: -30 }
-              }
-            },
-            right: {
-              title: 'MATCH',
-              style: {
-                label: { backgroundColor: '#4CAF50', color: 'white', fontSize: 32, borderRadius: 10, borderWidth: 2, borderColor: 'white' },
-                wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 30, marginLeft: 30 }
-              }
+      <Swiper
+        cards={pets}
+        // Usando o seu componente isolado!
+        renderCard={(card) => <PetCard pet={card} />}
+        onSwipedLeft={(cardIndex) => console.log('PASSOU:', pets[cardIndex]?.name)}
+        onSwipedRight={(cardIndex) => console.log('MATCH:', pets[cardIndex]?.name)}
+        cardIndex={0}
+        backgroundColor={colors.background}
+        stackSize={3}
+        animateCardOpacity
+        overlayLabels={{
+          left: {
+            title: 'NÃO',
+            style: { 
+              label: { backgroundColor: colors.danger, color: 'white', fontSize: 24 }, 
+              wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 30, marginLeft: -30 } 
             }
-          }}
-        />
-      </View>
+          },
+          right: {
+            title: 'MATCH!',
+            style: { 
+              label: { backgroundColor: colors.success, color: 'white', fontSize: 24 }, 
+              wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 30, marginLeft: 30 } 
+            }
+          }
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' },
-  header: { paddingTop: 60, paddingBottom: 10, alignItems: 'center', zIndex: 2 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#FF6600' },
-  errorText: { fontSize: 16, color: 'red', textAlign: 'center' },
-  swiperContainer: {
+  container: {
     flex: 1,
-    // Essa margem negativa ajusta a altura interna da biblioteca para o cartão ficar centralizado
-    marginTop: -40, 
-  }
+    backgroundColor: colors.background,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.danger,
+  },
 });
