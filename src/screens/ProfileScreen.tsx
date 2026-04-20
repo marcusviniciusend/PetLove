@@ -1,125 +1,94 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { supabase } from '../lib/supabase';
 import { colors } from '../theme/colors';
-import LGPDConsent from '../components/LGPDConsent';
-import { petService } from '../services/petService';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function ProfileScreen() {
-  const [name, setName] = useState('');
-  const [breed, setBreed] = useState('');
-  const [age, setAge] = useState('');
-  const [bio, setBio] = useState('');
-  const [hasConsent, setHasConsent] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
 
-  const handleSave = async () => {
-    if (!hasConsent) {
-      Alert.alert("Aviso", "Você precisa aceitar os termos da LGPD para continuar.");
-      return;
+  useEffect(() => {
+    getProfile();
+  }, []);
+
+  async function getProfile() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        let { data, error } = await supabase
+          .from('profiles')
+          .select(`full_name, bio, avatar_url`)
+          .eq('id', user.id)
+          .single();
+
+        if (data) setProfile(data);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    if (!name || !breed || !age) {
-      Alert.alert("Aviso", "Por favor, preencha o nome, a raça e a idade do pet.");
-      return;
-    }
-
-    const success = await petService.saveProfile({
-      name: name,
-      breed: breed,
-      age: parseInt(age, 10) || 0,
-    });
-
-    if (success) {
-      Alert.alert("Sucesso!", "O perfil do seu pet foi salvo no banco de dados!");
-      setName('');
-      setBreed('');
-      setAge('');
-      setBio('');
-      setHasConsent(false);
-    } else {
-      Alert.alert("Erro", "Não foi possível salvar. Verifique sua conexão e tente novamente.");
-    }
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
   };
 
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Perfil do Pet</Text>
-        <Text style={styles.subtitle}>Mantenha os dados atualizados para melhores matches!</Text>
+        <View style={styles.imagePlaceholder}>
+          <Icon name="person" size={80} color="#ccc" />
+          <TouchableOpacity style={styles.editImageBtn}>
+            <Icon name="camera" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.name}>{profile?.full_name || 'Tutor Sem Nome'}</Text>
+        <Text style={styles.bio}>{profile?.bio || 'Adicione uma bio para que outros tutores o conheçam!'}</Text>
       </View>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Nome do Pet</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="Ex: Rex" 
-          value={name} 
-          onChangeText={setName} 
-        />
+      <View style={styles.menu}>
+        <TouchableOpacity style={styles.menuItem}>
+          <Icon name="paw" size={24} color={colors.primary} />
+          <Text style={styles.menuText}>Meus Pets</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.menuItem}>
+          <Icon name="settings-outline" size={24} color={colors.text} />
+          <Text style={styles.menuText}>Configurações</Text>
+        </TouchableOpacity>
 
-        <Text style={styles.label}>Raça</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="Ex: Golden Retriever" 
-          value={breed} 
-          onChangeText={setBreed} 
-        />
-
-        <Text style={styles.label}>Idade</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="Ex: 2 anos" 
-          keyboardType="numeric"
-          value={age} 
-          onChangeText={setAge} 
-        />
-
-        <Text style={styles.label}>Sobre o Pet</Text>
-        <TextInput 
-          style={[styles.input, styles.textArea]} 
-          placeholder="Conte um pouco sobre a personalidade dele..." 
-          multiline 
-          numberOfLines={4}
-          value={bio} 
-          onChangeText={setBio} 
-        />
-
-        <LGPDConsent value={hasConsent} onValueChange={setHasConsent} />
-
-        <TouchableOpacity 
-          style={[styles.button, !hasConsent && styles.buttonDisabled]} 
-          onPress={handleSave}
-        >
-          <Text style={styles.buttonText}>Salvar Alterações</Text>
+        <TouchableOpacity style={[styles.menuItem, styles.logoutBtn]} onPress={handleSignOut}>
+          <Icon name="log-out-outline" size={24} color="#ff4444" />
+          <Text style={[styles.menuText, { color: '#ff4444' }]}>Sair da Conta</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { padding: 20, paddingTop: 50, backgroundColor: colors.primary },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 14, color: '#fff', opacity: 0.8 },
-  form: { padding: 20 },
-  label: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 8, marginTop: 15 },
-  input: { 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    borderRadius: 8, 
-    padding: 12, 
-    fontSize: 16, 
-    backgroundColor: '#fff' 
-  },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  button: { 
-    backgroundColor: colors.primary, 
-    padding: 15, 
-    borderRadius: 8, 
-    alignItems: 'center', 
-    marginTop: 30,
-    marginBottom: 50 
-  },
-  buttonDisabled: { backgroundColor: '#ccc' },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { alignItems: 'center', paddingVertical: 40, backgroundColor: '#fff', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  imagePlaceholder: { width: 140, height: 140, borderRadius: 70, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  editImageBtn: { position: 'absolute', bottom: 5, right: 5, backgroundColor: colors.primary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#fff' },
+  name: { fontSize: 24, fontWeight: 'bold', color: colors.text },
+  bio: { fontSize: 14, color: colors.text, opacity: 0.6, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 },
+  menu: { marginTop: 30, paddingHorizontal: 20 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 15, backgroundColor: '#fff', borderRadius: 12, marginBottom: 10 },
+  menuText: { marginLeft: 15, fontSize: 16, fontWeight: '500', color: colors.text },
+  logoutBtn: { marginTop: 20, borderProgress: 1, borderColor: '#ff444433', borderWidth: 1 }
 });
