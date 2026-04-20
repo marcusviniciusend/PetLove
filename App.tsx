@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 // Importando as nossas telas
 import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 import SwipeScreen from './src/screens/SwipeScreen';
 import MatchesScreen from './src/screens/MatchesScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -19,6 +20,10 @@ const Tab = createBottomTabNavigator();
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const [authScreen, setAuthScreen] = useState<'Login' | 'Register'>('Login');
+
+
 
   useEffect(() => {
     // Checa se o usuário já tem uma sessão salva ao abrir o app
@@ -44,9 +49,14 @@ export default function App() {
     );
   }
 
-  // A Regra do Guarda-Costas: Sem sessão válida? Mostra apenas o Login
   if (!session) {
-    return <LoginScreen />;
+    if (authScreen === 'Login') {
+      // Passa a função que muda o estado para 'Register'
+      return <LoginScreen onNavigateRegister={() => setAuthScreen('Register')} />;
+    } else {
+      // Passa a função que muda o estado de volta para 'Login'
+      return <RegisterScreen onNavigateLogin={() => setAuthScreen('Login')} />;
+    }
   }
 
   // Com sessão válida: libera as abas do aplicativo
