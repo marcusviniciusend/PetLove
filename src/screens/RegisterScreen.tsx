@@ -22,9 +22,8 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
     }
 
     setLoading(true);
-    // Aqui usamos o authService que já criamos! 
-    // (O nome guardaremos no banco de dados na próxima etapa do projeto)
-    const response = await authService.signUp(email, password);
+    // Adicionamos a variável "name" aqui na chamada da função:
+    const response = await authService.signUp(email, password, name);
     setLoading(false);
 
     if (response.success) {
