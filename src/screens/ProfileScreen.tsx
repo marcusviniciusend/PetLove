@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, Switch, ScrollView } from 'react-native';
 import { supabase } from '../lib/supabase';
@@ -5,6 +6,7 @@ import { colors } from '../theme/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   
@@ -115,7 +117,12 @@ export default function ProfileScreen() {
               <View style={styles.emptyState}>
                 <Icon name="paw-outline" size={60} color="#ddd" />
                 <Text style={styles.emptyText}>Você ainda não cadastrou nenhum pet.</Text>
-                <TouchableOpacity style={styles.primaryButton}>
+                <TouchableOpacity style={styles.primaryButton}
+                  onPress={() => {
+                    setShowPets(false); // Fecha o modal
+                    navigation.navigate('AddPet'); // Vai para a tela nova
+                  }}
+                >
                   <Text style={styles.primaryButtonText}>+ Adicionar Pet</Text>
                 </TouchableOpacity>
               </View>

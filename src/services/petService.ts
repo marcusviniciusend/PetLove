@@ -1,46 +1,60 @@
 import { supabase } from '../lib/supabase';
 
 export const petService = {
-  // 1. Função de LEITURA (Restaurada para o Swipe funcionar)
-  async getAvailablePets() {
+  // 1. Cadastrar um novo pet
+  async createPet(petData: { name: string, species: string, breed: string, age: number, bio: string }) {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: 'Usuário não autenticado' };
+
       const { data, error } = await supabase
         .from('pets')
-        .select('*');
+        .insert([{ ...petData, tutor_id: user.id }])
+        .select();
 
-      if (error) {
-        console.error('Erro do Supabase ao buscar pets:', error.message);
-        throw error;
-      }
-      return data || [];
+      if (error) return { success: false, error: error.message };
+      return { success: true, data };
     } catch (error) {
-      console.error('Falha no petService:', error);
-      return []; 
+      return { success: false, error: 'Erro inesperado ao cadastrar pet.' };
     }
   },
 
-  // 2. Função de ESCRITA (Nova, para a tela de Perfil)
-  async saveProfile(petData: { name: string; breed: string; age: number }) {
+  // 2. Listar os pets do tutor logado
+  async getMyPets() {
     try {
-      const { error } = await supabase
-        .from('pets')
-        .insert([
-          {
-            name: petData.name,
-            breed: petData.breed,
-            age: petData.age,
-            owner_name: 'Marcus', // Fixando seu nome por enquanto
-          }
-        ]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
 
-      if (error) {
-        console.error('Erro do Supabase ao salvar:', error.message);
-        throw error;
-      }
-      return true; 
+      const { data, error } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('tutor_id', user.id);
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.error('Falha ao salvar perfil:', error);
-      return false; 
+      console.error('Erro ao buscar meus pets:', error);
+      return [];
+    }
+  },
+
+  // 3. Buscar pets para a tela de Swipe (A peça que faltava!)
+  async getAvailablePets() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // Traz todos os pets do banco, EXCETO os do próprio usuário logado
+      const { data, error } = await supabase
+        .from('pets')
+        .select('*')
+        .neq('tutor_id', user.id);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar pets disponíveis:', error);
+      throw error;
     }
   }
 };
