@@ -1,59 +1,44 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { colors } from '../theme/colors';
-import { authService } from '../services/authService';
+import { colors } from '../../theme/colors';
+import { authService } from '../../services/authService';
 
-interface RegisterProps {
-  onNavigateLogin: () => void;
+interface LoginProps {
+  onNavigateRegister: () => void;
 }
 
-export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
-  const [name, setName] = useState('');
+export default function LoginScreen({ onNavigateRegister }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); // <-- Estado do Lembrar de mim
 
-  const handleSignUp = async () => {
-    if (!name || !email || !password) {
-      Alert.alert("Aviso", "Preencha todos os campos para criar sua conta.");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Aviso", "Preencha e-mail e senha para entrar.");
       return;
     }
-
     setLoading(true);
-    // Adicionamos a variável "name" aqui na chamada da função:
-    const response = await authService.signUp(email, password, name);
+    const response = await authService.signIn(email, password);
     setLoading(false);
 
     if (response.success) {
-      Alert.alert("Bem-vindo!", "Sua conta foi criada com sucesso.");
-      onNavigateLogin(); // Volta para a tela de login automaticamente
+      Alert.alert("Sucesso!", "Você está logado no Pet Tinder!");
     } else {
-      Alert.alert("Erro no Cadastro", response.error);
+      Alert.alert("Erro no Login", response.error);
     }
   };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={onNavigateLogin}>
-        <Icon name="arrow-back" size={28} color={colors.primary} />
-      </TouchableOpacity>
-
       <View style={styles.header}>
-        <Text style={styles.title}>Criar Conta</Text>
-        <Text style={styles.subtitle}>Junte-se ao Pet Tinder!</Text>
+        <Text style={styles.title}>Pet Tinder</Text>
+        <Text style={styles.subtitle}>Encontre o par perfeito para o seu pet</Text>
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Nome do Tutor</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Como quer ser chamado?"
-          value={name}
-          onChangeText={setName}
-        />
-
         <Text style={styles.label}>E-mail</Text>
         <TextInput
           style={styles.input}
@@ -68,7 +53,7 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="********"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -78,12 +63,19 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
-          onPress={handleSignUp}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>{loading ? 'Criando...' : 'Cadastrar'}</Text>
+        {/* Checkbox Lembrar de Mim */}
+        <TouchableOpacity style={styles.rememberContainer} onPress={() => setRememberMe(!rememberMe)}>
+          <Icon name={rememberMe ? 'checkbox' : 'square-outline'} size={22} color={colors.primary} />
+          <Text style={styles.rememberText}>Lembrar de mim</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleLogin} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Carregando...' : 'Entrar'}</Text>
+        </TouchableOpacity>
+
+        {/* Esse botão agora dispara a navegação em vez de chamar o banco */}
+        <TouchableOpacity style={styles.registerButton} onPress={onNavigateRegister}>
+          <Text style={styles.registerText}>Não tem conta? Cadastre-se</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -92,9 +84,8 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, justifyContent: 'center' },
-  backButton: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
   header: { alignItems: 'center', marginBottom: 40 },
-  title: { fontSize: 36, fontWeight: 'bold', color: colors.primary },
+  title: { fontSize: 42, fontWeight: 'bold', color: colors.primary },
   subtitle: { fontSize: 16, color: colors.text, opacity: 0.7, marginTop: 5 },
   form: { paddingHorizontal: 30 },
   label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8, marginTop: 15 },
@@ -102,7 +93,11 @@ const styles = StyleSheet.create({
   passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, backgroundColor: '#fff' },
   passwordInput: { flex: 1, padding: 15, fontSize: 16 },
   eyeIcon: { paddingHorizontal: 15 },
+  rememberContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
+  rememberText: { marginLeft: 8, color: colors.text, fontSize: 14 },
   button: { backgroundColor: colors.primary, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 30 },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  registerButton: { marginTop: 20, alignItems: 'center', padding: 10 },
+  registerText: { color: colors.primary, fontSize: 14, fontWeight: '600' }
 });

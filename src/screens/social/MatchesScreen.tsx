@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { colors } from '../theme/colors';
-import { useMatches } from '../hooks/useMatches';
+import { colors } from '../../theme/colors';
+import { useMatches } from '../../hooks/useMatches';
 
 export default function MatchesScreen() {
   const { matches, loading } = useMatches();

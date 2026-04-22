@@ -1,3 +1,4 @@
+import EditProfileScreen from './src/screens/profile/EditProfileScreen';
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,12 +7,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 // Importando as nossas telas
-import LoginScreen from './src/screens/LoginScreen';
-import RegisterScreen from './src/screens/RegisterScreen';
-import SwipeScreen from './src/screens/SwipeScreen';
-import MatchesScreen from './src/screens/MatchesScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import AddPetScreen from './src/screens/AddPetScreen';
+import LoginScreen from './src/screens/auth/LoginScreen';
+import RegisterScreen from './src/screens/auth/RegisterScreen';
+import SwipeScreen from './src/screens/social/SwipeScreen';
+import MatchesScreen from './src/screens/social/MatchesScreen';
+import ProfileScreen from './src/screens/profile/ProfileScreen';
+import AddPetScreen from './src/screens/profile/AddPetScreen';
 import { colors } from './src/theme/colors';
 import { supabase } from './src/lib/supabase';
 
@@ -95,6 +96,7 @@ export default function App() {
         
         {/* A nova tela que abre por cima (sobrepondo a barra) */}
         <Stack.Screen name="AddPet" component={AddPetScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 
 // Suas importações estruturadas
-import { useSwipe } from '../hooks/useSwipe';
-import PetCard from '../components/PetCard';
-import { matchService } from '../services/matchService';
+import { useSwipe } from '../../hooks/useSwipe';
+import PetCard from '../../components/PetCard';
+import { matchService } from '../../services/matchService';
 
 // Importando o nosso tema novo!
-import { colors } from '../theme/colors';
+import { colors } from '../../theme/colors';
 
 export default function SwipeScreen() {
   const { pets, loading, error } = useSwipe();

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { petService } from '../services/petService';
-import { colors } from '../theme/colors';
+import { petService } from '../../services/petService';
+import { colors } from '../../theme/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 // Se estiver usando React Navigation, tipar o navigation apropriadamente

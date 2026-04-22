@@ -1,9 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, Switch, ScrollView } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { petService } from '../services/petService'; // Importação necessária para buscar os pets
-import { colors } from '../theme/colors';
+import { supabase } from '../../lib/supabase';
+import { petService } from '../../services/petService'; // Importação necessária para buscar os pets
+import { colors } from '../../theme/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 export default function ProfileScreen() {
@@ -176,7 +176,11 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent}>
-            <TouchableOpacity style={styles.settingsOption}>
+            <TouchableOpacity style={styles.settingsOption} onPress={() => {
+            setShowSettings(false);
+            navigation.navigate('EditProfile');
+          }}
+        >
               <View style={styles.settingsOptionLeft}>
                 <Icon name="create-outline" size={24} color={colors.text} />
                 <Text style={styles.settingsText}>Editar Perfil</Text>
