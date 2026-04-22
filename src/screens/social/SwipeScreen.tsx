@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 
 // Suas importações estruturadas
@@ -53,10 +53,17 @@ export default function SwipeScreen() {
             matchService.registerInteraction(pet.id, 'dislike');
           }
         }}
-        onSwipedRight={(cardIndex) => {
+        onSwipedRight={async (cardIndex) => {
           const pet = pets[cardIndex];
           if (pet) {
-            matchService.registerInteraction(pet.id, 'like');
+            const response = await matchService.registerInteraction(pet.id, 'like');
+
+            if (response.match) {
+              Alert.alert(
+                '💖 IT\'S A MATCH!',
+                `Você e ${pet.name} deram like um no outro! Em breve vocês poderão conversar.`
+              );
+            }
           }
         }}
         cardIndex={0}

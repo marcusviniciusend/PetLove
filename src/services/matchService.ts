@@ -1,51 +1,62 @@
 import { supabase } from '../lib/supabase';
+import { Alert } from 'react-native';
 
 export const matchService = {
-  // Função 1: Salva o Like/Dislike (Escrita)
-  async registerInteraction(petId: string, type: 'like' | 'dislike') {
+  async registerInteraction(targetPetId: string, action: 'like' | 'dislike') {
+    // Por enquanto, não vamos salvar os 'dislikes' no banco para economizar espaço
+    if (action === 'dislike') return { match: false };
+
     try {
-      const { error } = await supabase
-        .from('interactions')
-        .insert([
-          {
-            pet_id: petId,
-            type: type,
-            user_id: 'meu-usuario-123', // Simulando o login
-          }
-        ]);
+      // 1. Identificar o tutor logado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { match: false };
 
-      if (error) throw error;
-      console.log(`Sucesso: ${type} salvo no banco para o pet ${petId}`);
-    } catch (error) {
-      console.error(`Erro ao salvar o ${type}:`, error);
-    }
-  },
-
-  // Função 2: Busca quem você deu Like (Leitura)
-  async getMyLikedPets() {
-    try {
-      const { data: interactions, error: intError } = await supabase
-        .from('interactions')
-        .select('pet_id')
-        .eq('user_id', 'meu-usuario-123')
-        .eq('type', 'like');
-
-      if (intError) throw intError;
-      if (!interactions || interactions.length === 0) return [];
-
-      const petIds = interactions.map(i => i.pet_id);
-
-      const { data: pets, error: petError } = await supabase
+      // 2. Pegar o pet do tutor (vamos usar o primeiro pet cadastrado como admirador)
+      const { data: myPets } = await supabase
         .from('pets')
-        .select('*')
-        .in('id', petIds);
+        .select('id, name')
+        .eq('tutor_id', user.id)
+        .limit(1);
 
-      if (petError) throw petError;
+      if (!myPets || myPets.length === 0) {
+        Alert.alert('Atenção', 'Você precisa cadastrar um pet antes de dar likes!');
+        return { match: false };
+      }
 
-      return pets || [];
+      const myPetId = myPets[0].id;
+      const myPetName = myPets[0].name;
+
+      // 3. Salvar o Like no banco
+      const { error: insertError } = await supabase
+        .from('likes')
+        .insert({ admirer_pet_id: myPetId, target_pet_id: targetPetId });
+
+      // Ignoramos o erro silenciosamente se for um like duplicado (a constraint unique barra)
+      if (insertError && !insertError.message.includes('duplicate key')) {
+        console.error('Erro ao dar like:', insertError.message);
+      }
+
+      // 4. A Mágica do Match: O targetPet já curtiu o meu pet antes?
+      const { data: matchData } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('admirer_pet_id', targetPetId) // Quem eu curti...
+        .eq('target_pet_id', myPetId)      // ...tinha me curtido?
+        .maybeSingle();
+
+      if (matchData) {
+        // MATCH! Rolou o Double Like!
+        console.log(`🎉 IT'S A MATCH entre ${myPetName} e o pet ${targetPetId}!`);
+        
+        // Futuramente, gravaremos isso na tabela 'matches'
+        return { match: true };
+      }
+
+      return { match: false };
+
     } catch (error) {
-      console.error('Erro ao buscar matches:', error);
-      return [];
+      console.error('Erro no fluxo de interação:', error);
+      return { match: false };
     }
   }
 };
