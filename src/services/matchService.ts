@@ -59,12 +59,21 @@ export const matchService = {
 
       if (matchData) {
         console.log(`🎉 IT'S A MATCH entre ${myPetName} e o pet ${targetPetId}!`);
-        
-        // NOVIDADE: Salva o encontro definitivo na tabela matches!
-        await supabase.from('matches').insert({
-          pet1_id: myPetId,
-          pet2_id: targetPetId
-        });
+
+        // Verifica se o match já existe para evitar duplicatas no banco de dados
+        const { data: existingMatch } = await supabase
+          .from('matches')
+          .select('id')
+          .or(`and(pet1_id.eq.${myPetId},pet2_id.eq.${targetPetId}),and(pet1_id.eq.${targetPetId},pet2_id.eq.${myPetId})`)
+          .maybeSingle();
+
+        if (!existingMatch) {
+          // Salva o encontro definitivo na tabela matches apenas se não existir
+          await supabase.from('matches').insert({
+            pet1_id: myPetId,
+            pet2_id: targetPetId
+          });
+        }
 
         return { match: true };
       }
@@ -106,18 +115,24 @@ export const matchService = {
       if (error) throw error;
       if (!data) return [];
 
-      // Simplificando o mapeamento e filtrando nulos
-      return data
-        .map(m => {
-          const p1 = m.pet1 as unknown as MatchedPet;
-          const p2 = m.pet2 as unknown as MatchedPet;
-          const otherPet = p1.id === myPetId ? p2 : p1;
-          return {
-            ...otherPet,
-            match_id: m.id // Mantemos o ID do match aqui
-          };
-        })
-        .filter(pet => pet !== null);
+      // Mapeamento e deduplicação para garantir que cada pet apareça apenas uma vez
+      const seenPetIds = new Set<string>();
+      const uniqueMatches: MatchedPet[] = [];
+
+      for (const m of data) {
+        const p1 = m.pet1 as unknown as MatchedPet;
+        const p2 = m.pet2 as unknown as MatchedPet;
+        if (!p1 || !p2) continue;
+
+        const otherPet = p1.id === myPetId ? p2 : p1;
+        
+        if (!seenPetIds.has(otherPet.id)) {
+          seenPetIds.add(otherPet.id);
+          uniqueMatches.push({ ...otherPet, match_id: m.id });
+        }
+      }
+
+      return uniqueMatches;
 
     } catch (error) {
       console.error('Erro ao buscar matches:', error);
