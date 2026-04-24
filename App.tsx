@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
-
+import ChatScreen from './src/screens/social/ChatScreen';
 // Importando as nossas telas
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
@@ -18,6 +18,16 @@ import { supabase } from './src/lib/supabase';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+// Stack específica para a aba de Matches, permitindo o Chat dentro dela
+function MatchesStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MatchesList" component={MatchesScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+    </Stack.Navigator>
+  );
+}
 
 // 1. Isolamos as suas Tabs em um componente separado
 function TabNavigator() {
@@ -45,7 +55,7 @@ function TabNavigator() {
     >
       <Tab.Screen name="Perfil" component={ProfileScreen} />
       <Tab.Screen name="Swipe" component={SwipeScreen} />
-      <Tab.Screen name="Matches" component={MatchesScreen} />
+      <Tab.Screen name="Matches" component={MatchesStack} />
     </Tab.Navigator>
   );
 }

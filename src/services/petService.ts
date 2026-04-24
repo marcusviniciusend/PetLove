@@ -48,7 +48,8 @@ export const petService = {
       const { data, error } = await supabase
         .from('pets')
         .select('*')
-        .neq('tutor_id', user.id);
+        .neq('tutor_id', user.id)
+        .limit(30);
 
       if (error) throw error;
       return data || [];

@@ -24,5 +24,9 @@ export function useSwipe() {
     }
   };
 
-  return { pets, loading, error };
+  const removePetFromList = (petId: string) => {
+    setPets(prev => prev.filter(p => p.id !== petId));
+  };
+
+  return { pets, loading, error, refresh: loadPets, removePetFromList };
 }

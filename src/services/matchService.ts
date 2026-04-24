@@ -1,5 +1,13 @@
 import { supabase } from '../lib/supabase';
-import { Alert } from 'react-native';
+
+export interface MatchedPet {
+  id: string;
+  name: string;
+  breed: string;
+  species: string;
+  tutor_id: string; // Adicionado para o Chat
+  match_id: string; // Adicionado para o Chat
+}
 
 export const matchService = {
   // 1. O Fluxo do Swipe
@@ -17,8 +25,7 @@ export const matchService = {
         .limit(1);
 
       if (!myPets || myPets.length === 0) {
-        Alert.alert('Atenção', 'Você precisa cadastrar um pet antes de dar likes!');
-        return { match: false };
+        return { match: false, error: 'NO_PET_FOUND' };
       }
 
       const myPetId = myPets[0].id;
@@ -62,7 +69,7 @@ export const matchService = {
   },
 
   // 2. O Motor da Aba de Matches
-  async getMyLikedPets() {
+  async getMyLikedPets(): Promise<MatchedPet[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -77,24 +84,31 @@ export const matchService = {
       if (!myPets || myPets.length === 0) return [];
       const myPetId = myPets[0].id;
 
-      // Busca todos os matches onde o meu pet está envolvido (seja como pet1 ou pet2)
-      const { data: matches } = await supabase
+      // Refactored to fetch matches and pet details in a single query using joins
+      const { data, error } = await supabase
         .from('matches')
-        .select('*')
+        .select(`
+          id,
+          pet1:pets!pet1_id(id, name, breed, species, tutor_id),
+          pet2:pets!pet2_id(id, name, breed, species, tutor_id)
+        `)
         .or(`pet1_id.eq.${myPetId},pet2_id.eq.${myPetId}`);
 
-      if (!matches || matches.length === 0) return [];
+      if (error) throw error;
+      if (!data) return [];
 
-      // Isola apenas os IDs dos "outros" pets (os crushes)
-      const otherPetIds = matches.map(m => m.pet1_id === myPetId ? m.pet2_id : m.pet1_id);
-
-      // Vai na tabela de pets e busca as informações (nome, raça) para desenhar os cards na tela
-      const { data: matchedPets } = await supabase
-        .from('pets')
-        .select('id, name, breed, species')
-        .in('id', otherPetIds);
-
-      return matchedPets || [];
+      // Simplificando o mapeamento e filtrando nulos
+      return data
+        .map(m => {
+          const p1 = m.pet1 as unknown as MatchedPet;
+          const p2 = m.pet2 as unknown as MatchedPet;
+          const otherPet = p1.id === myPetId ? p2 : p1;
+          return {
+            ...otherPet,
+            match_id: m.id // Mantemos o ID do match aqui
+          };
+        })
+        .filter(pet => pet !== null);
 
     } catch (error) {
       console.error('Erro ao buscar matches:', error);

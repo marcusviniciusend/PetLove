@@ -3,8 +3,20 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndi
 import { colors } from '../../theme/colors';
 import { useMatches } from '../../hooks/useMatches';
 
-export default function MatchesScreen() {
+export default function MatchesScreen({ navigation }: any) {
   const { matches, loading } = useMatches();
+
+  const handleOpenChat = (match: any) => {
+    // Navegação correta para uma tela aninhada dentro de um Tab.Screen
+    navigation.navigate('Matches', { // Nome da Tab.Screen que contém o MatchesStack
+      screen: 'Chat', // Nome da Stack.Screen dentro do MatchesStack
+      params: { // Parâmetros para a tela de Chat
+        matchId: match.match_id, // Usamos o ID do match definitivo
+        otherUserId: match.tutor_id, // Usamos o ID do tutor do outro pet
+        otherUserName: match.name,
+      },
+    });
+  };
 
   if (loading) {
     return (
@@ -13,14 +25,19 @@ export default function MatchesScreen() {
       </View>
     );
   }
+  
 
   const renderMatch = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.matchCard}>
+    <TouchableOpacity 
+      style={styles.matchCard} 
+      onPress={() => handleOpenChat(item)}
+    >
       {/* Usando o placeholder de Beagle se não houver foto */}
       <Image 
         source={{ uri: item.photo_url || 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=150' }} 
         style={styles.avatar} 
       />
+      
       <View style={styles.matchInfo}>
         <Text style={styles.matchName}>{item.name}</Text>
         <Text style={styles.lastMessage}>Tutor(a): {item.owner_name}</Text>
