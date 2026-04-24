@@ -1,7 +1,8 @@
 //card do pet que aparece na tela
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions, Platform } from 'react-native';
+import { moderateScale } from '../utils/responsive'; // Importe o utilitário
 
 // Pegando a largura e altura da tela do celular dinamicamente
 const { width, height } = Dimensions.get('window');
@@ -14,6 +15,7 @@ interface PetCardProps {
     breed: string;
     age: number;
     owner_name: string;
+    bio?: string; // Adicionado para exibir a biografia
     image_url?: string; 
   };
 }
@@ -25,13 +27,25 @@ export default function PetCard({ pet }: PetCardProps) {
   return (
     <View style={styles.card}>
       {/* Imagem de Fundo */}
-      <Image source={{ uri: imageUrl }} style={styles.image} />
+      <Image 
+        source={{ uri: imageUrl }} 
+        style={styles.image} 
+        resizeMode="cover"
+      />
       
       {/* Container com um fundo escuro transparente para o texto dar leitura em cima da foto */}
       <View style={styles.infoContainer}>
-        <Text style={styles.name}>{pet.name}, {pet.age}</Text>
-        <Text style={styles.breed}>{pet.breed}</Text>
-        <Text style={styles.owner}>Tutor(a): {pet.owner_name}</Text>
+        <View style={styles.textBackground}>
+          <View style={styles.row}>
+            <Text style={styles.name}>{pet.name}, {pet.age}</Text>
+            <View style={styles.onlineBadge} />
+          </View>
+          <Text style={styles.breed}>{pet.breed}</Text>
+          {pet.bio && (
+            <Text style={styles.bio} numberOfLines={2}>{pet.bio}</Text>
+          )}
+          <Text style={styles.owner}>📍 Próximo a você • Tutor(a): {pet.owner_name}</Text>
+        </View>
       </View>
     </View>
   );
@@ -39,10 +53,9 @@ export default function PetCard({ pet }: PetCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: width * 0.9, // 90% da largura da tela
-    height: height * 0.65, // 65% da altura da tela
-    borderRadius: 20,
-    backgroundColor: '#fff',
+    flex: 1,
+    borderRadius: 25,
+    backgroundColor: '#000',
     
     // Sombras (iOS e Android)
     shadowColor: '#000',
@@ -52,36 +65,63 @@ const styles = StyleSheet.create({
     elevation: 5,
     
     overflow: 'hidden', // Impede que a foto quadrada saia pelas bordas arredondadas
-    alignSelf: 'center',
-    marginBottom: 20, // Espaço para não grudar no próximo card na rolagem
   },
   image: {
     width: '100%',
     height: '100%',
-    position: 'absolute', // Faz a imagem ficar no fundo
   },
   infoContainer: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    padding: 20,
-    paddingBottom: 30,
-    backgroundColor: 'rgba(0,0,0,0.5)', // Degradê escuro para destacar o texto branco
+    height: '40%',
+    justifyContent: 'flex-end',
+  },
+  textBackground: {
+    padding: moderateScale(20),
+    // Padding aumentado para garantir que o texto fique acima dos botões flutuantes
+    paddingBottom: moderateScale(120), 
+    backgroundColor: 'rgba(0,0,0,0.45)', // Simula um gradiente para legibilidade
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: moderateScale(32), // Tamanho da fonte responsivo
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+  },
+  onlineBadge: {
+    width: moderateScale(12),
+    height: moderateScale(12),
+    borderRadius: moderateScale(6),
+    backgroundColor: '#4CD964',
+    marginLeft: moderateScale(10),
+    borderWidth: moderateScale(2),
+    borderColor: '#fff',
   },
   breed: {
-    color: '#E0E0E0',
-    fontSize: 18,
-    marginTop: 4,
+    color: '#fff',
+    fontSize: moderateScale(18), // Tamanho da fonte responsivo
+    marginTop: moderateScale(4),
+    opacity: 0.9,
+    fontWeight: '500',
+  },
+  bio: {
+    color: '#fff',
+    fontSize: moderateScale(15),
+    marginTop: moderateScale(8),
+    opacity: 0.85,
   },
   owner: {
-    color: '#FF6600', // O Laranja oficial do Pet Love
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 8,
+    color: '#fff',
+    fontSize: moderateScale(16), // Tamanho da fonte responsivo
+    fontWeight: '400',
+    marginTop: moderateScale(8),
+    opacity: 0.8,
   },
 });

@@ -44,12 +44,34 @@ export const petService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // Traz todos os pets do banco, EXCETO os do próprio usuário logado
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*')
-        .neq('tutor_id', user.id)
-        .limit(30);
+      // 1. Descobrir qual o meu pet logado
+      const { data: myPets } = await supabase.from('pets').select('id').eq('tutor_id', user.id).limit(1);
+      if (!myPets || myPets.length === 0) return [];
+      const myPetId = myPets[0].id;
+
+      // 2. Buscar IDs de pets que já dei LIKE ou DISLIKE
+      const [likes, dislikes] = await Promise.all([
+        supabase.from('likes').select('target_pet_id').eq('admirer_pet_id', myPetId),
+        supabase.from('dislikes').select('target_pet_id').eq('admirer_pet_id', myPetId)
+      ]);
+
+      // Juntamos todos os IDs que devem ser escondidos
+      const interactedIds = [
+        ...(likes.data?.map(l => l.target_pet_id) || []),
+        ...(dislikes.data?.map(d => d.target_pet_id) || [])
+      ];
+
+      // 3. Montar a query principal excluindo meus pets e os já interagidos
+      let query = supabase.from('pets').select('*').neq('tutor_id', user.id);
+
+      if (interactedIds.length > 0) {
+        const cleanIds = [...new Set(interactedIds)].filter(id => !!id);
+        // Correção da sintaxe: para o operador 'in' dentro de 'not', 
+        // os valores PRECISAM estar entre parênteses.
+        query = query.not('id', 'in', `(${cleanIds.join(',')})`);
+      }
+
+      const { data, error } = await query.limit(30);
 
       if (error) throw error;
       return data || [];

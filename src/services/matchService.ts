@@ -12,8 +12,6 @@ export interface MatchedPet {
 export const matchService = {
   // 1. O Fluxo do Swipe
   async registerInteraction(targetPetId: string, action: 'like' | 'dislike') {
-    if (action === 'dislike') return { match: false };
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { match: false };
@@ -30,6 +28,17 @@ export const matchService = {
 
       const myPetId = myPets[0].id;
       const myPetName = myPets[0].name;
+
+      // Se for dislike, apenas gravamos na tabela de dislikes e retornamos
+      if (action === 'dislike') {
+        const { error: dislikeError } = await supabase
+          .from('dislikes')
+          .insert({ admirer_pet_id: myPetId, target_pet_id: targetPetId });
+        
+        if (dislikeError) console.error('Erro ao salvar dislike:', dislikeError.message);
+        
+        return { match: false };
+      }
 
       // Grava o Like
       const { error: insertError } = await supabase
