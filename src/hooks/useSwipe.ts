@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { petService } from '../services/petService';
+import { Pet } from '../types';
 
 export function useSwipe() {
-  const [pets, setPets] = useState<any[]>([]);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

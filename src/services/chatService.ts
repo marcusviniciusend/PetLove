@@ -1,14 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { Message } from '../types';
 
-export interface Message {
-  id: string;
-  content: string;
-  sender_id: string;
-  receiver_id: string;
-  match_id: string;
-  created_at: string;
-  read: boolean;
-}
+export type { Message };
 
 export const chatService = {
   async getMessages(matchId: string): Promise<Message[]> {

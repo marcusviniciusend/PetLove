@@ -13,11 +13,10 @@ interface PetCardProps {
   pet: {
     id: number | string;
     name: string;
-    breed: string;
-    age: number;
-    owner_name: string;
-    bio?: string; // Adicionado para exibir a biografia
-    image_url?: string; 
+    breed?: string;
+    age?: number;
+    bio?: string;
+    image_url?: string;
   };
 }
 
@@ -46,7 +45,7 @@ export default function PetCard({ pet }: PetCardProps) {
           {pet.bio && (
             <Text style={styles.bio} numberOfLines={2}>{pet.bio}</Text>
           )}
-          <Text style={styles.owner}>📍 Próximo a você • Tutor(a): {pet.owner_name}</Text>
+          <Text style={styles.owner}>📍 Próximo a você</Text>
         </View>
       </View>
     </View>

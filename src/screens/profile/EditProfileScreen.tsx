@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { supabase } from '../../lib/supabase';
+import { profileService } from '../../services/profileService';
 import { colors } from '../../theme/colors';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
@@ -14,53 +14,29 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState('');
 
   useEffect(() => {
-    getProfile();
+    loadProfile();
   }, []);
 
-  async function getProfile() {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        let { data, error } = await supabase
-          .from('profiles')
-          .select(`full_name, bio`)
-          .eq('id', user.id)
-          .single();
-
-        if (data) {
-          setFullName(data.full_name || '');
-          setBio(data.bio || '');
-        }
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
+  async function loadProfile() {
+    setLoading(true);
+    const data = await profileService.getProfile();
+    if (data) {
+      setFullName(data.full_name || '');
+      setBio(data.bio || '');
     }
+    setLoading(false);
   }
 
   async function updateProfile() {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+    setLoading(true);
+    const result = await profileService.updateProfile({ full_name: fullName, bio });
+    setLoading(false);
 
-      const updates = {
-        id: user?.id,
-        full_name: fullName,
-        bio: bio,
-        updated_at: new Date(),
-      };
-
-      let { error } = await supabase.from('profiles').upsert(updates);
-      if (error) throw error;
-
+    if (result.success) {
       Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
       navigation.goBack();
-    } catch (error: any) {
-      Alert.alert('Erro', error.message);
-    } finally {
-      setLoading(false);
+    } else {
+      Alert.alert('Erro', result.error);
     }
   }
 

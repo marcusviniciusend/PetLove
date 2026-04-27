@@ -2,7 +2,9 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, Switch, ScrollView } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { petService } from '../../services/petService'; // Importação necessária para buscar os pets
+import { petService } from '../../services/petService';
+import { profileService } from '../../services/profileService';
+import { Profile, Pet } from '../../types';
 import { colors } from '../../theme/colors';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
@@ -11,48 +13,32 @@ const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: s
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPets, setShowPets] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [myPets, setMyPets] = useState<any[]>([]);
+  const [myPets, setMyPets] = useState<Pet[]>([]);
 
   useEffect(() => {
-    getProfile();
+    loadProfile();
   }, []);
 
-  // Função para carregar os pets do banco
+  async function loadProfile() {
+    setLoading(true);
+    const data = await profileService.getProfile();
+    setProfile(data);
+    setLoading(false);
+  }
+
   async function loadMyPets() {
     const data = await petService.getMyPets();
     setMyPets(data);
   }
 
-  // Função para abrir o modal garantindo que os dados estejam atualizados
   const handleOpenPets = async () => {
     await loadMyPets();
     setShowPets(true);
   };
-
-  async function getProfile() {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        let { data, error } = await supabase
-          .from('profiles')
-          .select(`full_name, bio, avatar_url`)
-          .eq('id', user.id)
-          .single();
-
-        if (data) setProfile(data);
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

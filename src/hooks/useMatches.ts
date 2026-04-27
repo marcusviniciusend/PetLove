@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { matchService } from '../services/matchService';
+import { MatchedPet } from '../types';
 
 export function useMatches() {
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<MatchedPet[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

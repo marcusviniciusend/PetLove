@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { supabase } from '../../lib/supabase';
-import { chatService, Message } from '../../services/chatService';
+import { useChat } from '../../hooks/useChat';
+import { Message } from '../../types';
 import { colors } from '../../theme/colors';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
@@ -20,68 +20,18 @@ const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: s
 
 export default function ChatScreen({ route, navigation }: any) {
   const { matchId, otherUserId, otherUserName } = route.params;
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, loading, currentUserId, sendMessage } = useChat(matchId, otherUserId);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string>('');
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !isMounted) return;
-
-      setCurrentUserId(user.id);
-
-      try {
-        const data = await chatService.getMessages(matchId);
-        if (isMounted) {
-          setMessages(data);
-          await chatService.markAllAsRead(matchId, user.id);
-          setTimeout(() => scrollToBottom(), 100);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar mensagens:', error);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    init();
-
-    const unsubscribe = chatService.subscribeToMessages(matchId, (newMsg) => {
-      if (!isMounted) return;
-      setMessages((prev) => {
-        if (prev.find((m) => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
-      });
-      setTimeout(() => scrollToBottom(), 100);
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [matchId]);
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !currentUserId || !otherUserId || sending) return;
-
+  const handleSend = async () => {
+    if (!newMessage.trim() || sending) return;
     setSending(true);
-    const messageText = newMessage.trim();
+    const text = newMessage.trim();
     setNewMessage('');
-
-    const result = await chatService.sendMessage(matchId, currentUserId, otherUserId, messageText);
-
-    if (!result.success) {
-      console.error('Erro ao enviar:', result.error);
-      setNewMessage(messageText);
-    }
-
+    const success = await sendMessage(text);
+    if (!success) setNewMessage(text);
     setSending(false);
     scrollToBottom();
   };
@@ -92,22 +42,13 @@ export default function ChatScreen({ route, navigation }: any) {
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isMyMessage = item.sender_id === currentUserId;
-
     return (
-      <View
-        style={[
-          styles.messageBubble,
-          isMyMessage ? styles.myMessage : styles.theirMessage,
-        ]}
-      >
+      <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
         <Text style={[styles.messageText, isMyMessage && styles.myMessageText]}>
           {item.content}
         </Text>
         <Text style={[styles.messageTime, isMyMessage && styles.myMessageTime]}>
-          {new Date(item.created_at).toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          {new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
         </Text>
       </View>
     );
@@ -142,6 +83,7 @@ export default function ChatScreen({ route, navigation }: any) {
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messagesList}
+          onContentSizeChange={scrollToBottom}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Icon name="chatbubbles-outline" size={64} color={colors.inactive} />
@@ -163,11 +105,8 @@ export default function ChatScreen({ route, navigation }: any) {
             maxLength={500}
           />
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!newMessage.trim() || sending) && styles.sendButtonDisabled,
-            ]}
-            onPress={sendMessage}
+            style={[styles.sendButton, (!newMessage.trim() || sending) && styles.sendButtonDisabled]}
+            onPress={handleSend}
             disabled={!newMessage.trim() || sending}
           >
             {sending ? (
@@ -183,15 +122,8 @@ export default function ChatScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,46 +134,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  messagesList: {
-    padding: 16,
-    flexGrow: 1,
-  },
-  messageBubble: {
-    maxWidth: '75%',
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 8,
-  },
-  myMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: 4,
-  },
-  theirMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.card,
-    borderBottomLeftRadius: 4,
-  },
-  messageText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  myMessageText: {
-    color: '#fff',
-  },
-  messageTime: {
-    fontSize: 11,
-    color: colors.inactive,
-    marginTop: 4,
-  },
-  myMessageTime: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  messagesList: { padding: 16, flexGrow: 1 },
+  messageBubble: { maxWidth: '75%', padding: 12, borderRadius: 16, marginBottom: 8 },
+  myMessage: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+  theirMessage: { alignSelf: 'flex-start', backgroundColor: colors.card, borderBottomLeftRadius: 4 },
+  messageText: { fontSize: 16, color: colors.text },
+  myMessageText: { color: '#fff' },
+  messageTime: { fontSize: 11, color: colors.inactive, marginTop: 4 },
+  myMessageTime: { color: 'rgba(255, 255, 255, 0.7)' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -269,19 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonDisabled: {
-    backgroundColor: colors.border,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: colors.inactive,
-    textAlign: 'center',
-  },
+  sendButtonDisabled: { backgroundColor: colors.border },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyText: { marginTop: 16, fontSize: 16, color: colors.inactive, textAlign: 'center' },
 });

@@ -1,14 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { MatchedPet } from '../types';
 
-export interface MatchedPet {
-  id: string;
-  name: string;
-  breed: string;
-  species: string;
-  tutor_id: string;
-  match_id: string;
-  image_url?: string;
-}
+export type { MatchedPet };
 
 export const matchService = {
   // 1. O Fluxo do Swipe
