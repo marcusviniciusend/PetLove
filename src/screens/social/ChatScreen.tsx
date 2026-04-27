@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { colors } from '../../theme/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
 interface Message {
   id: string;

@@ -1,39 +1,84 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Image,
+} from 'react-native';
 import { petService } from '../../services/petService';
+import { imageService } from '../../services/imageService';
 import { colors } from '../../theme/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
 
-// Se estiver usando React Navigation, tipar o navigation apropriadamente
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
+
+type SelectedImage = { uri: string; base64: string };
+
 export default function AddPetScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     species: '',
     breed: '',
     age: '',
-    bio: ''
+    bio: '',
   });
+
+  const handlePickImage = async () => {
+    const result = await imageService.selectImage();
+
+    if (result.type === 'permission_denied') {
+      Alert.alert(
+        'Permissão necessária',
+        'Precisamos acessar sua galeria para adicionar uma foto ao pet. Habilite nas configurações do celular.'
+      );
+      return;
+    }
+
+    if (result.type === 'success') {
+      setSelectedImage({ uri: result.uri, base64: result.base64 });
+    }
+  };
 
   const handleSavePet = async () => {
     if (!formData.name || !formData.species) {
       Alert.alert('Atenção', 'O nome e a espécie do pet são obrigatórios.');
       return;
     }
+    if (!selectedImage) {
+      Alert.alert('Atenção', 'A foto do pet é obrigatória.');
+      return;
+    }
 
     setLoading(true);
+
+    const uploadResult = await imageService.uploadPetPhoto(selectedImage.base64);
+    if (uploadResult.type === 'error') {
+      setLoading(false);
+      Alert.alert('Erro ao enviar foto', uploadResult.error);
+      return;
+    }
+
     const response = await petService.createPet({
       name: formData.name,
       species: formData.species,
       breed: formData.breed,
       age: parseInt(formData.age) || 0,
-      bio: formData.bio
+      bio: formData.bio,
+      image_url: uploadResult.url,
     });
+
     setLoading(false);
 
     if (response.success) {
       Alert.alert('Sucesso!', `${formData.name} foi adicionado ao seu perfil.`);
-      navigation.goBack(); // Volta para a tela de perfil após salvar
+      navigation.goBack();
     } else {
       Alert.alert('Erro', response.error || 'Não foi possível cadastrar o pet.');
     }
@@ -50,6 +95,23 @@ export default function AddPetScreen({ navigation }: any) {
       </View>
 
       <View style={styles.form}>
+        <Text style={styles.label}>Foto do Pet *</Text>
+        <TouchableOpacity style={styles.imagePicker} onPress={handlePickImage}>
+          {selectedImage ? (
+            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} resizeMode="cover" />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Icon name="camera-outline" size={40} color={colors.primary} />
+              <Text style={styles.imagePlaceholderText}>Toque para adicionar uma foto</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        {selectedImage && (
+          <TouchableOpacity onPress={handlePickImage} style={styles.changePhotoLink}>
+            <Text style={styles.changePhotoText}>Trocar foto</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.label}>Nome do Pet *</Text>
         <TextInput
           style={styles.input}
@@ -93,8 +155,8 @@ export default function AddPetScreen({ navigation }: any) {
           onChangeText={(text) => setFormData({ ...formData, bio: text })}
         />
 
-        <TouchableOpacity 
-          style={styles.saveButton} 
+        <TouchableOpacity
+          style={styles.saveButton}
           onPress={handleSavePet}
           disabled={loading}
         >
@@ -111,13 +173,57 @@ export default function AddPetScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: 50, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
   backButton: { padding: 5 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   form: { padding: 20 },
   label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8, marginTop: 15 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 15, fontSize: 16, color: colors.text },
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    color: colors.text,
+  },
   textArea: { height: 100, textAlignVertical: 'top' },
-  saveButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 25, alignItems: 'center', marginTop: 30, marginBottom: 40 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  imagePicker: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  imagePreview: { width: '100%', height: '100%' },
+  imagePlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F3',
+    gap: 10,
+  },
+  imagePlaceholderText: { color: colors.primary, fontSize: 14, fontWeight: '500' },
+  changePhotoLink: { alignItems: 'center', marginTop: 8 },
+  changePhotoText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  saveButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginTop: 30,
+    marginBottom: 40,
+  },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

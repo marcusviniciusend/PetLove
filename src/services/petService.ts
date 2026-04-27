@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 
 export const petService = {
   // 1. Cadastrar um novo pet
-  async createPet(petData: { name: string, species: string, breed: string, age: number, bio: string }) {
+  async createPet(petData: { name: string; species: string; breed: string; age: number; bio: string; image_url?: string }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { success: false, error: 'Usuário não autenticado' };

@@ -4,7 +4,9 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Mod
 import { supabase } from '../../lib/supabase';
 import { petService } from '../../services/petService'; // Importação necessária para buscar os pets
 import { colors } from '../../theme/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();

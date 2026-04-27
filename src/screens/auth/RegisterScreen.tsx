@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 import { colors } from '../../theme/colors';
 import { authService } from '../../services/authService';
 

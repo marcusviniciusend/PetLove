@@ -32,15 +32,14 @@ export default function MatchesScreen({ navigation }: any) {
       style={styles.matchCard} 
       onPress={() => handleOpenChat(item)}
     >
-      {/* Usando o placeholder de Beagle se não houver foto */}
-      <Image 
-        source={{ uri: item.photo_url || 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=150' }} 
-        style={styles.avatar} 
+      <Image
+        source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=150' }}
+        style={styles.avatar}
       />
-      
+
       <View style={styles.matchInfo}>
         <Text style={styles.matchName}>{item.name}</Text>
-        <Text style={styles.lastMessage}>Tutor(a): {item.owner_name}</Text>
+        <Text style={styles.lastMessage}>{item.species} • {item.breed || 'Raça não definida'}</Text>
       </View>
       <View style={styles.unreadBadge} />
     </TouchableOpacity>

@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Activi
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { colors } from '../../theme/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();

@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 import { moderateScale } from '../../utils/responsive'; // Importe o utilitário
 
 // Suas importações estruturadas

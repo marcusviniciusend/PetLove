@@ -5,8 +5,9 @@ export interface MatchedPet {
   name: string;
   breed: string;
   species: string;
-  tutor_id: string; // Adicionado para o Chat
-  match_id: string; // Adicionado para o Chat
+  tutor_id: string;
+  match_id: string;
+  image_url?: string;
 }
 
 export const matchService = {
@@ -107,8 +108,8 @@ export const matchService = {
         .from('matches')
         .select(`
           id,
-          pet1:pets!pet1_id(id, name, breed, species, tutor_id),
-          pet2:pets!pet2_id(id, name, breed, species, tutor_id)
+          pet1:pets!pet1_id(id, name, breed, species, tutor_id, image_url),
+          pet2:pets!pet2_id(id, name, breed, species, tutor_id, image_url)
         `)
         .or(`pet1_id.eq.${myPetId},pet2_id.eq.${myPetId}`);
 
