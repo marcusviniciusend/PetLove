@@ -38,7 +38,46 @@ export const petService = {
     }
   },
 
-  // 3. Buscar pets para a tela de Swipe (Com RPC Otimizado)
+  // 3. Atualizar um pet existente
+  async updatePet(petId: string, petData: { name: string; species: string; breed: string; age: number; bio: string; image_url?: string }) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: 'Usuário não autenticado' };
+
+      const { data, error } = await supabase
+        .from('pets')
+        .update({ ...petData })
+        .eq('id', petId)
+        .eq('tutor_id', user.id)
+        .select();
+
+      if (error) return { success: false, error: error.message };
+      return { success: true, data };
+    } catch {
+      return { success: false, error: 'Erro inesperado ao atualizar pet.' };
+    }
+  },
+
+  // 4. Excluir um pet
+  async deletePet(petId: string) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: 'Usuário não autenticado' };
+
+      const { error } = await supabase
+        .from('pets')
+        .delete()
+        .eq('id', petId)
+        .eq('tutor_id', user.id);
+
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Erro inesperado ao excluir pet.' };
+    }
+  },
+
+  // 5. Buscar pets para a tela de Swipe (Com RPC Otimizado)
   async getAvailablePets() {
     try {
       const { data: { user } } = await supabase.auth.getUser();

@@ -144,13 +144,21 @@ export default function ProfileScreen() {
             ) : (
               <View>
                 {myPets.map((pet) => (
-                  <View key={pet.id} style={styles.petItemCard}>
+                  <TouchableOpacity
+                    key={pet.id}
+                    style={styles.petItemCard}
+                    onPress={() => {
+                      setShowPets(false);
+                      navigation.navigate('EditPet', { pet });
+                    }}
+                  >
                     <Icon name="paw" size={24} color={colors.primary} />
-                    <View style={{ marginLeft: 15 }}>
+                    <View style={{ marginLeft: 15, flex: 1 }}>
                       <Text style={styles.petNameText}>{pet.name}</Text>
                       <Text style={styles.petDetailText}>{pet.species} • {pet.breed || 'Raça não definida'}</Text>
                     </View>
-                  </View>
+                    <Icon name="chevron-forward" size={20} color="#ccc" />
+                  </TouchableOpacity>
                 ))}
                 
                 <TouchableOpacity 

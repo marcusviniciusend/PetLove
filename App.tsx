@@ -1,11 +1,14 @@
 import EditProfileScreen from './src/screens/profile/EditProfileScreen';
+import EditPetScreen from './src/screens/profile/EditPetScreen';
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Icon from 'react-native-vector-icons/Ionicons';
+import _Icon from 'react-native-vector-icons/Ionicons';
 import ChatScreen from './src/screens/social/ChatScreen';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string }>;
 // Importando as nossas telas
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
@@ -106,6 +109,7 @@ export default function App() {
         
         {/* A nova tela que abre por cima (sobrepondo a barra) */}
         <Stack.Screen name="AddPet" component={AddPetScreen} />
+        <Stack.Screen name="EditPet" component={EditPetScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>

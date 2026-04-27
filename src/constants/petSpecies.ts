@@ -1,0 +1,16 @@
+export const PET_SPECIES = [
+  'Cachorro',
+  'Gato',
+  'Coelho',
+  'Pássaro',
+  'Hamster',
+  'Peixe',
+  'Tartaruga',
+  'Cobra',
+  'Lagarto',
+  'Porquinho-da-índia',
+  'Papagaio',
+  'Calopsita',
+  'Furão',
+  'Chinchila',
+];

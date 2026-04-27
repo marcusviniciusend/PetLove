@@ -18,19 +18,25 @@ import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
-type SelectedImage = { uri: string; base64: string };
+type Pet = {
+  id: string;
+  name: string;
+  species: string;
+  breed: string;
+  age: number;
+  bio: string;
+  image_url?: string;
+};
 
-export default function AddPetScreen({ navigation }: any) {
+type NewImage = { uri: string; base64: string };
+
+export default function EditPetScreen({ navigation, route }: any) {
+  const pet: Pet = route.params.pet;
+
   const [loading, setLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [newImage, setNewImage] = useState<NewImage | null>(null);
   const [speciesSuggestions, setSpeciesSuggestions] = useState<string[]>([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    species: '',
-    breed: '',
-    age: '',
-    bio: '',
-  });
 
   const handleSpeciesChange = (text: string) => {
     setFormData({ ...formData, species: text });
@@ -45,59 +51,92 @@ export default function AddPetScreen({ navigation }: any) {
     setFormData({ ...formData, species });
     setSpeciesSuggestions([]);
   };
+  const [formData, setFormData] = useState({
+    name: pet.name,
+    species: pet.species,
+    breed: pet.breed || '',
+    age: pet.age ? String(pet.age) : '',
+    bio: pet.bio || '',
+  });
+
+  const currentImageUri = newImage?.uri ?? pet.image_url;
 
   const handlePickImage = async () => {
     const result = await imageService.selectImage();
-
     if (result.type === 'permission_denied') {
       Alert.alert(
         'Permissão necessária',
-        'Precisamos acessar sua galeria para adicionar uma foto ao pet. Habilite nas configurações do celular.'
+        'Habilite o acesso à galeria nas configurações do celular.'
       );
       return;
     }
-
     if (result.type === 'success') {
-      setSelectedImage({ uri: result.uri, base64: result.base64 });
+      setNewImage({ uri: result.uri, base64: result.base64 });
     }
   };
 
-  const handleSavePet = async () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.species) {
       Alert.alert('Atenção', 'O nome e a espécie do pet são obrigatórios.');
-      return;
-    }
-    if (!selectedImage) {
-      Alert.alert('Atenção', 'A foto do pet é obrigatória.');
       return;
     }
 
     setLoading(true);
 
-    const uploadResult = await imageService.uploadPetPhoto(selectedImage.base64);
-    if (uploadResult.type === 'error') {
-      setLoading(false);
-      Alert.alert('Erro ao enviar foto', uploadResult.error);
-      return;
+    let imageUrl = pet.image_url;
+
+    if (newImage) {
+      const uploadResult = await imageService.uploadPetPhoto(newImage.base64);
+      if (uploadResult.type === 'error') {
+        setLoading(false);
+        Alert.alert('Erro ao enviar foto', uploadResult.error);
+        return;
+      }
+      imageUrl = uploadResult.url;
     }
 
-    const response = await petService.createPet({
+    const response = await petService.updatePet(pet.id, {
       name: formData.name,
       species: formData.species,
       breed: formData.breed,
       age: parseInt(formData.age) || 0,
       bio: formData.bio,
-      image_url: uploadResult.url,
+      image_url: imageUrl,
     });
 
     setLoading(false);
 
     if (response.success) {
-      Alert.alert('Sucesso!', `${formData.name} foi adicionado ao seu perfil.`);
+      Alert.alert('Sucesso!', 'As informações do pet foram atualizadas.');
       navigation.goBack();
     } else {
-      Alert.alert('Erro', response.error || 'Não foi possível cadastrar o pet.');
+      Alert.alert('Erro', response.error || 'Não foi possível atualizar o pet.');
     }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      `Excluir ${pet.name}?`,
+      'Esta ação é permanente e não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            const response = await petService.deletePet(pet.id);
+            setDeleting(false);
+
+            if (response.success) {
+              navigation.goBack();
+            } else {
+              Alert.alert('Erro', response.error || 'Não foi possível excluir o pet.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -106,15 +145,15 @@ export default function AddPetScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Novo Pet</Text>
+        <Text style={styles.headerTitle}>Editar Pet</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Foto do Pet *</Text>
+        <Text style={styles.label}>Foto do Pet</Text>
         <TouchableOpacity style={styles.imagePicker} onPress={handlePickImage}>
-          {selectedImage ? (
-            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} resizeMode="cover" />
+          {currentImageUri ? (
+            <Image source={{ uri: currentImageUri }} style={styles.imagePreview} resizeMode="cover" />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Icon name="camera-outline" size={40} color={colors.primary} />
@@ -122,7 +161,7 @@ export default function AddPetScreen({ navigation }: any) {
             </View>
           )}
         </TouchableOpacity>
-        {selectedImage && (
+        {currentImageUri && (
           <TouchableOpacity onPress={handlePickImage} style={styles.changePhotoLink}>
             <Text style={styles.changePhotoText}>Trocar foto</Text>
           </TouchableOpacity>
@@ -131,7 +170,6 @@ export default function AddPetScreen({ navigation }: any) {
         <Text style={styles.label}>Nome do Pet *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: Arrascaeta"
           value={formData.name}
           onChangeText={(text) => setFormData({ ...formData, name: text })}
         />
@@ -170,7 +208,6 @@ export default function AddPetScreen({ navigation }: any) {
         <Text style={styles.label}>Idade (anos)</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: 3"
           keyboardType="numeric"
           value={formData.age}
           onChangeText={(text) => setFormData({ ...formData, age: text })}
@@ -188,13 +225,28 @@ export default function AddPetScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.saveButton}
-          onPress={handleSavePet}
-          disabled={loading}
+          onPress={handleSave}
+          disabled={loading || deleting}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Cadastrar Pet</Text>
+            <Text style={styles.saveButtonText}>Salvar Alterações</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDelete}
+          disabled={loading || deleting}
+        >
+          {deleting ? (
+            <ActivityIndicator color={colors.danger} />
+          ) : (
+            <>
+              <Icon name="trash-outline" size={18} color={colors.danger} />
+              <Text style={styles.deleteButtonText}>Excluir Pet</Text>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -254,9 +306,21 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     marginTop: 30,
-    marginBottom: 40,
   },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    marginBottom: 40,
+    padding: 16,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+  },
+  deleteButtonText: { color: colors.danger, fontSize: 16, fontWeight: '600' },
   speciesContainer: { position: 'relative', zIndex: 10 },
   suggestionsBox: {
     position: 'absolute',
