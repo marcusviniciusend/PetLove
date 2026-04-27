@@ -19,7 +19,7 @@ export const matchService = {
 
       const { data: myPets } = await supabase
         .from('pets')
-        .select('id, name')
+        .select('id')
         .eq('tutor_id', user.id)
         .limit(1);
 
@@ -28,7 +28,6 @@ export const matchService = {
       }
 
       const myPetId = myPets[0].id;
-      const myPetName = myPets[0].name;
 
       // Se for dislike, apenas gravamos na tabela de dislikes e retornamos
       if (action === 'dislike') {
@@ -59,23 +58,7 @@ export const matchService = {
         .maybeSingle();
 
       if (matchData) {
-        console.log(`🎉 IT'S A MATCH entre ${myPetName} e o pet ${targetPetId}!`);
-
-        // Verifica se o match já existe para evitar duplicatas no banco de dados
-        const { data: existingMatch } = await supabase
-          .from('matches')
-          .select('id')
-          .or(`and(pet1_id.eq.${myPetId},pet2_id.eq.${targetPetId}),and(pet1_id.eq.${targetPetId},pet2_id.eq.${myPetId})`)
-          .maybeSingle();
-
-        if (!existingMatch) {
-          // Salva o encontro definitivo na tabela matches apenas se não existir
-          await supabase.from('matches').insert({
-            pet1_id: myPetId,
-            pet2_id: targetPetId
-          });
-        }
-
+        // O trigger SQL cria a linha em `matches` automaticamente
         return { match: true };
       }
 

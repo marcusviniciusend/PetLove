@@ -8,8 +8,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { petService } from '../../services/petService';
 import { imageService } from '../../services/imageService';
 import { colors } from '../../theme/colors';
@@ -114,7 +114,7 @@ export default function AddPetScreen({ navigation }: any) {
         <Text style={styles.label}>Foto do Pet *</Text>
         <TouchableOpacity style={styles.imagePicker} onPress={handlePickImage}>
           {selectedImage ? (
-            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} resizeMode="cover" />
+            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Icon name="camera-outline" size={40} color={colors.primary} />

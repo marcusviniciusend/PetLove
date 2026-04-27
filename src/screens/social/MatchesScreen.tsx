@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '../../theme/colors';
 import { useMatches } from '../../hooks/useMatches';
 
@@ -35,6 +36,8 @@ export default function MatchesScreen({ navigation }: any) {
       <Image
         source={{ uri: item.image_url || 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=150' }}
         style={styles.avatar}
+        contentFit="cover"
+        cachePolicy="memory-disk"
       />
 
       <View style={styles.matchInfo}>

@@ -12,23 +12,15 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { chatService, Message } from '../../services/chatService';
 import { colors } from '../../theme/colors';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
-interface Message {
-  id: string;
-  content: string;
-  sender_id: string;
-  receiver_id: string;
-  created_at: string;
-  read: boolean;
-}
-
 export default function ChatScreen({ route, navigation }: any) {
   const { matchId, otherUserId, otherUserName } = route.params;
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,9 +31,36 @@ export default function ChatScreen({ route, navigation }: any) {
   useEffect(() => {
     let isMounted = true;
 
-    getCurrentUser(isMounted);
-    loadMessages(isMounted);
-    const unsubscribe = subscribeToMessages(isMounted);
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !isMounted) return;
+
+      setCurrentUserId(user.id);
+
+      try {
+        const data = await chatService.getMessages(matchId);
+        if (isMounted) {
+          setMessages(data);
+          await chatService.markAllAsRead(matchId, user.id);
+          setTimeout(() => scrollToBottom(), 100);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar mensagens:', error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    const unsubscribe = chatService.subscribeToMessages(matchId, (newMsg) => {
+      if (!isMounted) return;
+      setMessages((prev) => {
+        if (prev.find((m) => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+      setTimeout(() => scrollToBottom(), 100);
+    });
 
     return () => {
       isMounted = false;
@@ -49,109 +68,22 @@ export default function ChatScreen({ route, navigation }: any) {
     };
   }, [matchId]);
 
-  const getCurrentUser = async (isMounted: boolean) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && isMounted) setCurrentUserId(user.id);
-  };
-
-  const loadMessages = async (isMounted: boolean) => {
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('match_id', matchId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      if (isMounted) {
-        setMessages(data || []);
-        await markAllAsRead();
-        setTimeout(() => scrollToBottom(), 100);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar mensagens:', error);
-    } finally {
-      if (isMounted) setLoading(false);
-    }
-  };
-
-  const subscribeToMessages = (isMounted: boolean) => {
-    // Usamos um nome de canal único com Math.random para evitar o erro 
-    // "cannot add callbacks after subscribe" durante re-renderizações rápidas.
-    const channelName = `chat:${matchId}:${Math.random().toString(36).slice(2, 11)}`;
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `match_id=eq.${matchId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          if (isMounted) {
-            setMessages((prev) => {
-              // Proteção contra mensagens duplicadas que podem vir 
-              // tanto do fetch inicial quanto do realtime
-              if (prev.find(m => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
-            setTimeout(() => scrollToBottom(), 100);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase
-        .from('messages')
-        .update({ read: true })
-        .eq('match_id', matchId)
-        .eq('receiver_id', user.id)
-        .eq('read', false);
-    } catch (error) {
-      console.error('Erro ao marcar como lidas:', error);
-    }
-  };
-
   const sendMessage = async () => {
-    if (!newMessage.trim() || !currentUserId || !otherUserId || sending) {
-      if (!otherUserId) console.error("Erro: otherUserId não definido nos parâmetros da rota");
-      return;
-    }
+    if (!newMessage.trim() || !currentUserId || !otherUserId || sending) return;
 
     setSending(true);
     const messageText = newMessage.trim();
     setNewMessage('');
 
-    try {
-      const { error } = await supabase.from('messages').insert({
-        match_id: matchId,
-        sender_id: currentUserId,
-        receiver_id: otherUserId,
-        content: messageText,
-      });
+    const result = await chatService.sendMessage(matchId, currentUserId, otherUserId, messageText);
 
-      if (error) throw error;
-      scrollToBottom();
-    } catch (error) {
-      console.error('Erro ao enviar:', error);
+    if (!result.success) {
+      console.error('Erro ao enviar:', result.error);
       setNewMessage(messageText);
-    } finally {
-      setSending(false);
     }
+
+    setSending(false);
+    scrollToBottom();
   };
 
   const scrollToBottom = () => {

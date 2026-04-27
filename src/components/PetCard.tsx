@@ -1,7 +1,8 @@
 //card do pet que aparece na tela
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { moderateScale } from '../utils/responsive'; // Importe o utilitário
 
 // Pegando a largura e altura da tela do celular dinamicamente
@@ -27,10 +28,11 @@ export default function PetCard({ pet }: PetCardProps) {
   return (
     <View style={styles.card}>
       {/* Imagem de Fundo */}
-      <Image 
-        source={{ uri: imageUrl }} 
-        style={styles.image} 
-        resizeMode="cover"
+      <Image
+        source={{ uri: imageUrl }}
+        style={styles.image}
+        contentFit="cover"
+        cachePolicy="memory-disk"
       />
       
       {/* Container com um fundo escuro transparente para o texto dar leitura em cima da foto */}
