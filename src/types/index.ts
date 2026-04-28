@@ -8,6 +8,7 @@ export interface Pet {
   bio?: string;
   image_url?: string;
   created_at?: string;
+  deleted_at?: string | null;
 }
 
 export interface Profile {

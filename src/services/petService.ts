@@ -28,7 +28,8 @@ export const petService = {
       const { data, error } = await supabase
         .from('pets')
         .select('*')
-        .eq('tutor_id', user.id);
+        .eq('tutor_id', user.id)
+        .is('deleted_at', null);
 
       if (error) throw error;
       return data || [];
@@ -58,7 +59,7 @@ export const petService = {
     }
   },
 
-  // 4. Excluir um pet
+  // 4. Soft delete — preserva histórico de matches
   async deletePet(petId: string) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -66,7 +67,7 @@ export const petService = {
 
       const { error } = await supabase
         .from('pets')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', petId)
         .eq('tutor_id', user.id);
 

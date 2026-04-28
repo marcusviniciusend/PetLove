@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { chatService } from '../services/chatService';
-import { Message } from '../types';
+import { useChatStore } from '../stores/chatStore';
 
 export function useChat(matchId: string, otherUserId: string) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { messagesByMatch, setMessages, appendMessage } = useChatStore();
+  const messages = messagesByMatch[matchId] ?? [];
+  const isCached = !!messagesByMatch[matchId];
+
+  const [loading, setLoading] = useState(!isCached);
   const [currentUserId, setCurrentUserId] = useState('');
   const currentUserIdRef = useRef('');
 
@@ -19,15 +22,20 @@ export function useChat(matchId: string, otherUserId: string) {
       setCurrentUserId(user.id);
       currentUserIdRef.current = user.id;
 
-      try {
-        const data = await chatService.getMessages(matchId);
-        if (isMounted) {
-          setMessages(data);
-          await chatService.markAllAsRead(matchId, user.id);
+      if (!isCached) {
+        try {
+          const data = await chatService.getMessages(matchId);
+          if (isMounted) {
+            setMessages(matchId, data);
+            await chatService.markAllAsRead(matchId, user.id);
+          }
+        } catch (err) {
+          console.error('Erro ao carregar mensagens:', err);
+        } finally {
+          if (isMounted) setLoading(false);
         }
-      } catch (err) {
-        console.error('Erro ao carregar mensagens:', err);
-      } finally {
+      } else {
+        chatService.markAllAsRead(matchId, user.id);
         if (isMounted) setLoading(false);
       }
     };
@@ -36,10 +44,7 @@ export function useChat(matchId: string, otherUserId: string) {
 
     const unsubscribe = chatService.subscribeToMessages(matchId, (newMsg) => {
       if (!isMounted) return;
-      setMessages((prev) => {
-        if (prev.find((m) => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
-      });
+      appendMessage(matchId, newMsg);
     });
 
     return () => {

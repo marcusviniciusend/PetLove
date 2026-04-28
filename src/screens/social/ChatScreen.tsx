@@ -14,6 +14,7 @@ import {
 import { useChat } from '../../hooks/useChat';
 import { Message } from '../../types';
 import { colors } from '../../theme/colors';
+import { ChatBubble } from '../../components/ChatBubble';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
@@ -40,19 +41,9 @@ export default function ChatScreen({ route, navigation }: any) {
     flatListRef.current?.scrollToEnd({ animated: true });
   };
 
-  const renderMessage = ({ item }: { item: Message }) => {
-    const isMyMessage = item.sender_id === currentUserId;
-    return (
-      <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
-        <Text style={[styles.messageText, isMyMessage && styles.myMessageText]}>
-          {item.content}
-        </Text>
-        <Text style={[styles.messageTime, isMyMessage && styles.myMessageTime]}>
-          {new Date(item.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </View>
-    );
-  };
+  const renderMessage = ({ item }: { item: Message }) => (
+    <ChatBubble message={item} isMyMessage={item.sender_id === currentUserId} />
+  );
 
   if (loading) {
     return (
@@ -66,7 +57,7 @@ export default function ChatScreen({ route, navigation }: any) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={90}
       >
         <View style={styles.header}>
@@ -136,13 +127,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   messagesList: { padding: 16, flexGrow: 1 },
-  messageBubble: { maxWidth: '75%', padding: 12, borderRadius: 16, marginBottom: 8 },
-  myMessage: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-  theirMessage: { alignSelf: 'flex-start', backgroundColor: colors.card, borderBottomLeftRadius: 4 },
-  messageText: { fontSize: 16, color: colors.text },
-  myMessageText: { color: '#fff' },
-  messageTime: { fontSize: 11, color: colors.inactive, marginTop: 4 },
-  myMessageTime: { color: 'rgba(255, 255, 255, 0.7)' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { matchService } from '../services/matchService';
 import { MatchedPet } from '../types';
+import { supabase } from '../lib/supabase';
 
 export function useMatches() {
   const [matches, setMatches] = useState<MatchedPet[]>([]);
@@ -8,6 +9,21 @@ export function useMatches() {
 
   useEffect(() => {
     fetchMatches();
+
+    const channel = supabase
+      .channel('matches-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'matches' },
+        () => {
+          fetchMatches();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchMatches = async () => {
