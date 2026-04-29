@@ -56,9 +56,9 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Perfil" component={ProfileScreen} />
       <Tab.Screen name="Swipe" component={SwipeScreen} />
       <Tab.Screen name="Matches" component={MatchesStack} />
+      <Tab.Screen name="Perfil" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

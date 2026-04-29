@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,8 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useChat } from '../../hooks/useChat';
 import { Message } from '../../types';
 import { colors } from '../../theme/colors';
@@ -19,12 +19,45 @@ import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
+type DateSeparator = { type: 'separator'; id: string; label: string };
+type MessageItem = { type: 'message'; data: Message };
+type ListItem = DateSeparator | MessageItem;
+
+function formatMessageDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'Hoje';
+  if (date.toDateString() === yesterday.toDateString()) return 'Ontem';
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+function buildListItems(messages: Message[]): ListItem[] {
+  const items: ListItem[] = [];
+  let lastDateKey = '';
+
+  for (const msg of messages) {
+    const dateKey = new Date(msg.created_at).toDateString();
+    if (dateKey !== lastDateKey) {
+      items.push({ type: 'separator', id: `sep-${dateKey}`, label: formatMessageDate(msg.created_at) });
+      lastDateKey = dateKey;
+    }
+    items.push({ type: 'message', data: msg });
+  }
+
+  return items;
+}
+
 export default function ChatScreen({ route, navigation }: any) {
   const { matchId, otherUserId, otherUserName } = route.params;
   const { messages, loading, currentUserId, sendMessage } = useChat(matchId, otherUserId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  const listItems = useMemo(() => buildListItems(messages), [messages]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
@@ -41,9 +74,16 @@ export default function ChatScreen({ route, navigation }: any) {
     flatListRef.current?.scrollToEnd({ animated: true });
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <ChatBubble message={item} isMyMessage={item.sender_id === currentUserId} />
-  );
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if (item.type === 'separator') {
+      return (
+        <View style={styles.separatorContainer}>
+          <Text style={styles.separatorText}>{item.label}</Text>
+        </View>
+      );
+    }
+    return <ChatBubble message={item.data} isMyMessage={item.data.sender_id === currentUserId} />;
+  };
 
   if (loading) {
     return (
@@ -54,11 +94,11 @@ export default function ChatScreen({ route, navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={90}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 83 : 0}
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -70,9 +110,9 @@ export default function ChatScreen({ route, navigation }: any) {
 
         <FlatList
           ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
+          data={listItems}
+          keyExtractor={(item) => item.type === 'separator' ? item.id : item.data.id}
+          renderItem={renderItem}
           contentContainerStyle={styles.messagesList}
           onContentSizeChange={scrollToBottom}
           ListEmptyComponent={
@@ -157,4 +197,17 @@ const styles = StyleSheet.create({
   sendButtonDisabled: { backgroundColor: colors.border },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
   emptyText: { marginTop: 16, fontSize: 16, color: colors.inactive, textAlign: 'center' },
+  separatorContainer: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  separatorText: {
+    fontSize: 12,
+    color: colors.inactive,
+    backgroundColor: colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
 });
